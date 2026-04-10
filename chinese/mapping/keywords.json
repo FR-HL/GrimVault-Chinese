@@ -9,6 +9,7 @@
   "稀有度：传奇": "Rarity: Legendary",
   "稀有度：独特": "Rarity: Unique",
   "稀有度：神器": "Rarity: Artifact",
+  "稀有度：命名神器": "Rarity: Artifact",
   "稀有度：劣质": "Rarity: Poor",
   "稀有度：粗糙": "Rarity: Poor",
 
@@ -88,6 +89,7 @@
   "传奇": "Legendary",
   "独特": "Unique",
   "神器": "Artifact",
+  "命名神器": "Artifact",
   "劣质": "Poor",
   "粗糙": "Poor",
 
@@ -108,8 +110,13 @@
   "牧师": "Cleric",
   "吟游诗人": "Bard",
   "术士": "Warlock",
+  "邪术士": "Warlock",
   "德鲁伊": "Druid",
   "巫师": "Sorcerer",
+
+  "全盔": "Full Helm",
+  "半盔": "Half Helm",
+  "发现": "Found",
 
   "任务物品": "Quest Item",
   "需求": "Demand",

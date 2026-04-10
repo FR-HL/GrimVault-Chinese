@@ -81,8 +81,10 @@ class Translator:
             if not translated:
                 continue
 
-            # Strip Chinese chars + fullwidth punctuation from all lines
-            cleaned = re.sub(r'[\u4e00-\u9fff\uff00-\uffef\u3000-\u303f（）【】「」『』〔〕]+', '', translated).strip()
+            # Strip Chinese chars + fullwidth punctuation + special quotes from all lines
+            cleaned = re.sub(r'[\u4e00-\u9fff\uff00-\uffef\u3000-\u303f（）【】「」『』〔〕\u201c\u201d\u2018\u2019]+', '', translated).strip()
+            # Clean up leftover spaces from stripped chars
+            cleaned = re.sub(r'\s+', ' ', cleaned).strip()
 
             # First line (item name) must always be kept
             if i == 0:
@@ -90,11 +92,11 @@ class Translator:
                     translated_lines.append(cleaned)
                 continue
 
-            # Other lines: skip if still has Chinese after cleaning
-            if not cleaned or any('\u4e00' <= c <= '\u9fff' for c in cleaned):
+            # Skip empty or still-dirty lines
+            if not cleaned:
                 continue
 
-            translated_lines.append(translated)
+            translated_lines.append(cleaned)
 
         return "\n".join(translated_lines)
 
@@ -149,16 +151,23 @@ class Translator:
         if stat_match:
             value = stat_match.group(1)
             stat_name = stat_match.group(2).strip()
+            # Try exact match first, then without spaces (OCR may insert spaces)
+            stat_name_nospace = stat_name.replace(" ", "")
             if stat_name in mappings:
                 return f"{value} {mappings[stat_name]}"
+            if stat_name_nospace in mappings:
+                return f"{value} {mappings[stat_name_nospace]}"
 
         # Reverse pattern: "力量+3"
         stat_match2 = re.match(r"^(.+?)([+\-]\d+\.?\d*%?)$", line)
         if stat_match2:
             stat_name = stat_match2.group(1).strip()
+            stat_name_nospace = stat_name.replace(" ", "")
             value = stat_match2.group(2)
             if stat_name in mappings:
                 return f"{mappings[stat_name]}{value}"
+            if stat_name_nospace in mappings:
+                return f"{mappings[stat_name_nospace]}{value}"
 
         # 5. Substring replacement (longest match first)
         translated = line

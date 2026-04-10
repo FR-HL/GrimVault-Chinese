@@ -136,6 +136,9 @@ function updateOverlay (eventData) {
 
       isShown = true;
       logger.info ('Game active - showing overlay');
+    } else {
+      // Keep overlay on top (may lose top status after other windows gain focus)
+      overlayRef.setAlwaysOnTop (true, 'screen-saver');
     }
 
     previousGameBounds = bounds;

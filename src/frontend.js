@@ -41,6 +41,10 @@ export function wire (overlay) {
     if (isScanning) return;
     isScanning = true;
 
+    // Force overlay to top layer before showing results
+    overlay.setAlwaysOnTop (true, 'screen-saver');
+    overlay.moveTop ();
+
     send ('scan:start');
 
     const sendError = (message, tooltip = null) => {

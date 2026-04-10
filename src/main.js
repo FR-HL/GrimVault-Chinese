@@ -298,6 +298,9 @@ async function registerScanHotkey (overlay, reservedKeys) {
 // Open settings window with specific tab
 function openSettingsWindow (tab) {
   if (settingsWindow) {
+    if (settingsWindow.isMinimized ()) settingsWindow.restore ();
+    settingsWindow.setAlwaysOnTop (true, 'screen-saver');
+    settingsWindow.show ();
     settingsWindow.focus ();
     return;
   }
@@ -309,7 +312,10 @@ function openSettingsWindow (tab) {
   settingsWindow = new BrowserWindow ({
     width: 750,
     height: 600,
+    show: false,
     title: 'GrimVault 中文版 - 设置',
+    minimizable: false,
+    maximizable: false,
     autoHideMenuBar: true,
     webPreferences: {
       sandbox: false,
@@ -320,23 +326,14 @@ function openSettingsWindow (tab) {
 
   settingsWindow.loadFile (editorPath, { hash: tab || 'settings' });
 
-  // Unregister keyboard shortcuts while settings window is focused (so typing works)
-  // Note: mouse polling via koffi is NOT affected by globalShortcut
-  settingsWindow.on ('focus', () => {
-    globalShortcut.unregisterAll ();
+  // Force to top after content loads (screen-saver = highest priority, same as overlay)
+  settingsWindow.once ('ready-to-show', () => {
+    settingsWindow.setAlwaysOnTop (true, 'screen-saver');
+    settingsWindow.show ();
+    settingsWindow.focus ();
   });
 
-  const restoreShortcuts = () => {
-    globalShortcut.unregisterAll ();
-    globalShortcut.register ('F5', () => { openSettingsWindow ('settings'); });
-    globalShortcut.register ('F6', () => { openSettingsWindow ('mapping'); });
-    // Re-register scan key if it's a keyboard key (mouse keys use koffi polling)
-    if (overlayRef) registerScanHotkey (overlayRef, RESERVED_KEYS);
-  };
-
-  settingsWindow.on ('blur', restoreShortcuts);
   settingsWindow.on ('closed', () => {
     settingsWindow = null;
-    restoreShortcuts ();
   });
 }

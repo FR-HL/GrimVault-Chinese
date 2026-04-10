@@ -96,9 +96,11 @@ def initialize():
     if not os.path.exists(model_path):
         # Try common installation paths
         candidates = [
-            r"D:\dnd\GrimVault\resources\models\tooltip.onnx",
             os.path.expandvars(
                 r"%LOCALAPPDATA%\Programs\GrimVault\resources\models\tooltip.onnx"
+            ),
+            os.path.expandvars(
+                r"%PROGRAMFILES%\GrimVault\GrimVault Chinese Edition\native\models\tooltip.onnx"
             ),
         ]
         for candidate in candidates:
@@ -238,6 +240,7 @@ def scan():
             "传说": "Legendary", "传奇": "Legendary",
             "独特": "Unique",
             "神器": "Artifact",
+            "命名神器": "Artifact",
         }
         for line in chinese_lines:
             l = line.strip()

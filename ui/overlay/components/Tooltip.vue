@@ -164,38 +164,59 @@ const shouldShowContent = computed(() => {
   return markerWidth.value > 0 && (isLoading.value || errorMessage.value !== null || isTooltipActive.value);
 });
 
-// Watch for tooltip visibility changes to measure dimensions
-watch([shouldShowContent], () => {
+// Watch for tooltip content changes to re-measure dimensions and fix position
+watch([shouldShowContent, isLoading, () => item.value.prices.market, () => item.value.attributes.secondary.length], () => {
   nextTick(() => {
     if (tooltipNode.value) {
       const rect = tooltipNode.value.getBoundingClientRect();
       tooltipWidth.value = rect.width;
       tooltipHeight.value = rect.height;
-      logger.debug(`Tooltip dimensions: ${tooltipWidth.value}x${tooltipHeight.value}`);
     }
   });
 });
 
-// Computed property for tooltip positioning
+// Computed property for tooltip positioning with screen boundary clamping
 const PADDING = 10;
 const tooltipPosition = computed(() => {
   if (!markerWidth.value || !tooltipWidth.value || !tooltipHeight.value) {
     return { left: 0, top: 0 };
   }
 
+  // Screen dimensions
+  const screenW = window.innerWidth || 1920;
+  const screenH = window.innerHeight || 1080;
+
+  // Horizontal: prefer left of marker, fallback right
   const availableLeft = markerLeft.value;
   const neededSpace = tooltipWidth.value + PADDING;
   const shouldPlaceLeft = availableLeft >= neededSpace;
 
-  // Position horizontally: left of marker (preferred) or right if not enough space
-  const left = shouldPlaceLeft
+  let left = shouldPlaceLeft
     ? -(tooltipWidth.value + PADDING)
     : markerWidth.value + PADDING;
 
-  // Position vertically: center align with marker
-  const top = (markerHeight.value / 2) - (tooltipHeight.value / 2);
+  // Clamp horizontal: prevent going off right edge
+  const absoluteLeft = markerLeft.value + left;
+  if (absoluteLeft + tooltipWidth.value > screenW) {
+    left = -(tooltipWidth.value + PADDING);
+  }
+  // Prevent going off left edge
+  if (markerLeft.value + left < 0) {
+    left = -markerLeft.value;
+  }
 
-  // logger.debug(`Tooltip positioning: shouldPlaceLeft=${shouldPlaceLeft}, left=${left}, top=${top}`);
+  // Vertical: center align with marker
+  let top = (markerHeight.value / 2) - (tooltipHeight.value / 2);
+
+  // Clamp vertical: prevent going off bottom
+  const absoluteTop = markerTop.value + top;
+  if (absoluteTop + tooltipHeight.value > screenH) {
+    top = screenH - markerTop.value - tooltipHeight.value - PADDING;
+  }
+  // Prevent going off top
+  if (markerTop.value + top < 0) {
+    top = -markerTop.value + PADDING;
+  }
 
   return { left, top };
 });
@@ -269,7 +290,12 @@ electron.on("scan:finish", () => {
 });
 
 electron.on("manual:scan", () => {
-  scan();
+  // Manual scan: skip canScan check, always allow
+  if (props.mode === modes.disabled) return;
+  const scanId = ++currentScanId.value;
+  scanStartMousePos.value = { x: currentMousePos.value.x, y: currentMousePos.value.y };
+  logger.debug(`Manual scan triggered (scan #${scanId})`);
+  electron.send("scan", { scanId });
 });
 
 // Mouse button scanning support
@@ -605,17 +631,6 @@ function getGradeColor(grade) {
             class="tooltip-body"
             :class="{ 'mt-3': !props.components.includes('header') }"
           >
-            <!-- Chinese OCR lines (always visible once set) -->
-            <section v-if="chineseLines.length">
-              <div
-                v-for="line in chineseLines"
-                class="preview-line"
-              >
-                {{ line }}
-              </div>
-              <div class="tooltip-separator"></div>
-            </section>
-
             <!-- API data: attributes (shown after loading completes) -->
             <section
               v-if="!isLoading && props.components.includes('primary') && primary.length"
@@ -757,7 +772,7 @@ function getGradeColor(grade) {
             <div class="tooltip-separator"></div>
 
             <div class="text-xs" style="color: var(--dnd-oak)">
-              由 DarkerDB.com 提供数据
+              by 7. & 方源Official | 群: 376490002
             </div>
           </div>
         </div>
